@@ -110,20 +110,21 @@
 
             <!-- 聯絡意願 -->
             <div class="space-y-3 mb-8">
-                <h3 class="text-sm font-bold text-warm-900 border-b border-warm-200 pb-2 mb-3">後續支援 (選填)</h3>
-                <p class="text-sm text-warm-800 mb-2 leading-relaxed">你是否願意讓諮商中心的老師主動聯繫你？</p>
+                <h3 class="text-sm font-bold text-warm-900 border-b border-warm-200 pb-2 mb-3">後續支援</h3>
                 
-                <button class="follow-up-btn w-full p-4 rounded-xl border-2 border-warm-200 text-left flex justify-between items-center transition-colors focus:outline-none bg-white" data-val="yes">
+                <!-- 動態引導標題 -->
+                <p id="contact-guide" class="text-sm text-warm-800 mb-2 leading-relaxed">你是否願意讓諮商中心的老師主動聯繫你？</p>
+                
+                <button id="btn-will-yes" class="follow-up-btn w-full p-4 rounded-xl border-2 border-warm-200 text-left flex justify-between items-center transition-colors focus:outline-none bg-white" data-val="yes">
                     <span class="font-bold text-warm-900">是的，我願意</span>
                     <i class="indicator fa-regular fa-circle-check text-xl text-warm-300"></i>
                 </button>
                 
-                <!-- 展開的手機輸入框 -->
                 <div id="phone-container" class="hidden px-2 pb-2">
                     <input type="tel" id="input-phone" placeholder="請留下手機號碼" class="w-full p-3 rounded-lg border border-pop bg-orange-50 focus:border-pop focus:ring-2 focus:ring-pop outline-none transition-all">
                 </div>
 
-                <button class="follow-up-btn w-full p-4 rounded-xl border-2 border-warm-200 text-left flex justify-between items-center transition-colors focus:outline-none bg-white" data-val="no">
+                <button id="btn-will-no" class="follow-up-btn w-full p-4 rounded-xl border-2 border-warm-200 text-left flex justify-between items-center transition-colors focus:outline-none bg-white" data-val="no">
                     <span class="font-bold text-warm-900">暫時不需要</span>
                     <i class="indicator fa-regular fa-circle-check text-xl text-warm-300"></i>
                 </button>
@@ -157,7 +158,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             let answers = {};
             let isWilling = null;
-            let feedbackCategory = ""; // 紀錄狀態（低/中/高）傳給後端
+            let feedbackCategory = ""; 
             
             const questions = [
                 "1. 睡眠困難（譬如難以入睡、易醒或早醒）", "2. 感覺緊張不安", "3. 覺得容易動怒",
@@ -222,17 +223,63 @@
                 });
             });
 
+            // 畫面三特定元素
+            const contactGuide = document.getElementById('contact-guide');
+            const btnWillYes = document.getElementById('btn-will-yes');
+            const phoneContainer = document.getElementById('phone-container');
+
+            // 選擇意願的共用函數
+            function selectWillingness(val) {
+                isWilling = val;
+                const followUpBtns = document.querySelectorAll('.follow-up-btn');
+                
+                followUpBtns.forEach(b => {
+                    b.classList.remove('border-pop', 'bg-orange-50');
+                    b.classList.add('border-warm-200', 'bg-white');
+                    b.querySelector('.indicator').classList.replace('fa-solid', 'fa-regular');
+                    b.querySelector('.indicator').classList.replace('text-pop', 'text-warm-300');
+                });
+                
+                const targetBtn = val === 'yes' ? document.getElementById('btn-will-yes') : document.getElementById('btn-will-no');
+                targetBtn.classList.remove('border-warm-200', 'bg-white');
+                targetBtn.classList.add('border-pop', 'bg-orange-50');
+                targetBtn.querySelector('.indicator').classList.replace('fa-regular', 'fa-solid');
+                targetBtn.querySelector('.indicator').classList.replace('text-warm-300', 'text-pop');
+
+                if(val === 'yes') {
+                    phoneContainer.classList.remove('hidden');
+                } else {
+                    phoneContainer.classList.add('hidden');
+                    document.getElementById('input-phone').value = '';
+                }
+                
+                checkSubmitReady();
+            }
+
             btnNext.addEventListener('click', () => {
-                // === 計算分數與回饋 ===
                 const total = (answers['1']||0) + (answers['2']||0) + (answers['3']||0) + (answers['4']||0) + (answers['5']||0);
                 const q6 = (answers['6']||0);
                 const feedbackText = document.getElementById('feedback-text');
                 const feedbackArea = document.getElementById('feedback-area');
+                
+                // 重置意願
+                isWilling = null;
+                contactGuide.innerHTML = "你是否願意讓諮商中心的老師主動聯繫你？";
+                contactGuide.className = "text-sm text-warm-800 mb-2 leading-relaxed";
 
+                // 高風險攔截機制
                 if (total >= 10 || q6 >= 2) {
                     feedbackCategory = "高風險";
                     feedbackText.innerHTML = "🚨 大腦警示燈亮起！<br>你的電池目前處於低電量狀態，系統有點過載囉。請務必留意自己的身心警訊，適時求助！";
                     feedbackArea.className = "mb-8 p-5 rounded-2xl border-2 border-red-300 bg-red-50 shadow-inner";
+                    
+                    // 動態改變意願區塊
+                    contactGuide.innerHTML = "<strong>你的狀態讓我們有點擔心。強烈建議你留下手機，讓諮商老師陪你聊聊：</strong>";
+                    contactGuide.className = "text-sm text-red-500 mb-2 leading-relaxed font-bold";
+                    
+                    // 強制預設為「願意」，展開手機輸入框，讓送出條件變嚴格
+                    selectWillingness('yes');
+                    
                 } else if (total >= 6) {
                     feedbackCategory = "中等耗電";
                     feedbackText.innerHTML = "🔋 大腦微幅耗電中。<br>最近是不是有點累、壓力有點大？記得給自己安排一些喘息與放空的空檔喔。";
@@ -252,17 +299,14 @@
             const inName = document.getElementById('input-name');
             const inId = document.getElementById('input-id');
             const inPhone = document.getElementById('input-phone');
-            const phoneContainer = document.getElementById('phone-container');
 
             function checkSubmitReady() {
-                // 強制驗證姓名與學號
                 const isBaseInfoFilled = (inName.value.trim() !== '' && inId.value.trim() !== '');
                 let ready = false;
 
                 if (isBaseInfoFilled && isWilling === 'no') {
                     ready = true;
                 } else if (isBaseInfoFilled && isWilling === 'yes') {
-                    // 若願意聯絡，手機也必填
                     if (inPhone.value.trim() !== '') ready = true;
                 }
 
@@ -277,28 +321,7 @@
 
             followUpBtns.forEach(btn => {
                 btn.addEventListener('click', function() {
-                    isWilling = this.getAttribute('data-val');
-                    
-                    followUpBtns.forEach(b => {
-                        b.classList.remove('border-pop', 'bg-orange-50');
-                        b.classList.add('border-warm-200', 'bg-white');
-                        b.querySelector('.indicator').classList.replace('fa-solid', 'fa-regular');
-                        b.querySelector('.indicator').classList.replace('text-pop', 'text-warm-300');
-                    });
-                    
-                    this.classList.remove('border-warm-200', 'bg-white');
-                    this.classList.add('border-pop', 'bg-orange-50');
-                    this.querySelector('.indicator').classList.replace('fa-regular', 'fa-solid');
-                    this.querySelector('.indicator').classList.replace('text-warm-300', 'text-pop');
-
-                    if(isWilling === 'yes') {
-                        phoneContainer.classList.remove('hidden');
-                    } else {
-                        phoneContainer.classList.add('hidden');
-                        inPhone.value = ''; // 清除不需要的手機號碼
-                    }
-                    
-                    checkSubmitReady();
+                    selectWillingness(this.getAttribute('data-val'));
                 });
             });
 
@@ -315,7 +338,7 @@
                 const finalData = {
                     answers: answers,
                     needHelp: isWilling,
-                    category: feedbackCategory, // 將狀態回傳給老師
+                    category: feedbackCategory,
                     contact: {
                         name: inName.value.trim(),
                         id: inId.value.trim(),
@@ -323,7 +346,6 @@
                     }
                 };
 
-                // 若您還沒部署 GAS_URL，這裡會跳出錯誤但仍顯示成功動畫
                 fetch(GAS_URL, {
                     method: 'POST',
                     body: JSON.stringify(finalData)
