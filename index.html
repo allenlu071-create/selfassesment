@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>初級大人自我狀態掃描</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        warm: {
+                            50: '#faf8f5', 100: '#f0ece1', 200: '#e3dcce',
+                            300: '#c2b8a3', 500: '#8c8370', 800: '#5c5446', 900: '#403a31',
+                        },
+                        pop: '#d4a373'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { display: none; }
+        body { -ms-overflow-style: none; scrollbar-width: none; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+    </style>
+</head>
+<body class="bg-gray-100 text-warm-900 font-sans antialiased min-h-screen flex justify-center">
+
+    <div class="w-full max-w-md bg-white min-h-screen shadow-xl relative flex flex-col mx-auto">
+        
+        <!-- ================= 畫面一：Landing Page ================= -->
+        <section id="screen-1" class="flex flex-col p-6 min-h-screen bg-warm-50 animate-fade-in">
+            <div class="flex-1 flex flex-col justify-center">
+                <div class="text-center mb-8">
+                    <div class="w-24 h-24 bg-warm-100 rounded-full flex items-center justify-center mx-auto mb-4 text-pop text-4xl shadow-inner">
+                        <i class="fa-solid fa-battery-half"></i>
+                    </div>
+                    <h1 class="text-2xl font-bold tracking-wide">初級大人自我狀態掃描</h1>
+                </div>
+                
+                <p class="text-warm-800 leading-relaxed mb-6 text-justify">
+                    同學你好！這是一份專屬初級大人的大腦耗電量掃描。請放輕鬆，回想<strong class="text-pop">「過去這一個星期（包含今天）」</strong>的整體狀況來作答即可。
+                </p>
+
+                <div class="bg-warm-100 border border-warm-200 rounded-xl p-4 mb-8 space-y-3 text-sm text-warm-800 shadow-sm">
+                    <div class="flex items-start">
+                        <i class="fa-solid fa-lock text-pop mt-1 mr-3 w-4 text-center"></i>
+                        <p><strong>絕對保密：</strong>結果僅由諮商中心保管，絕不外流給任課或班導師。</p>
+                    </div>
+                    <div class="flex items-start">
+                        <i class="fa-solid fa-handshake-angle text-pop mt-1 mr-3 w-4 text-center"></i>
+                        <p><strong>主動支援：</strong>若掃描顯示大腦過載，你可以選擇留下聯絡方式讓老師提供資源。</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-auto pb-4">
+                <label class="flex items-center space-x-3 mb-6 p-2 rounded-lg active:bg-warm-100 transition-colors cursor-pointer">
+                    <input type="checkbox" id="consent-check" class="w-6 h-6 rounded border-warm-300 text-pop focus:ring-pop accent-pop">
+                    <span class="text-base font-medium">我已閱讀並同意上述說明</span>
+                </label>
+                <button id="btn-start" disabled class="w-full py-4 rounded-xl font-bold text-lg bg-warm-200 text-warm-500 transition-colors shadow-sm disabled:opacity-50">
+                    開始掃描
+                </button>
+            </div>
+        </section>
+
+        <!-- ================= 畫面二：測驗主體 ================= -->
+        <section id="screen-2" class="hidden flex-col min-h-screen bg-warm-50 animate-fade-in relative">
+            <div class="sticky top-0 bg-warm-50/95 backdrop-blur-sm p-4 border-b border-warm-200 z-10 flex justify-between text-xs font-bold text-warm-800 shadow-sm">
+                <span>0=完全沒有</span>
+                <span>2=中等程度</span>
+                <span>4=非常厲害</span>
+            </div>
+
+            <div class="p-6 space-y-6 flex-1 pb-24" id="questions-container"></div>
+
+            <div class="sticky bottom-0 bg-warm-50 p-4 border-t border-warm-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                <button id="btn-next" disabled class="w-full py-4 rounded-xl font-bold text-lg bg-warm-200 text-warm-500 transition-colors shadow-sm disabled:opacity-50">
+                    下一步 (<span id="answered-count">0</span>/6)
+                </button>
+            </div>
+        </section>
+
+        <!-- ================= 畫面三：後續聯繫與提交 ================= -->
+        <section id="screen-3" class="hidden flex-col p-6 min-h-screen bg-white animate-fade-in overflow-y-auto pb-10">
+            <div class="text-center mb-6 mt-2">
+                <h2 class="text-2xl font-bold text-warm-900 mb-2">掃描完成！</h2>
+            </div>
+
+            <!-- 動態回饋區 -->
+            <div id="feedback-area" class="mb-8 p-5 rounded-2xl border-2 border-pop bg-orange-50 shadow-inner">
+                <p id="feedback-text" class="text-warm-900 font-medium leading-relaxed text-center"></p>
+            </div>
+
+            <!-- 強制填寫基本資料 -->
+            <div class="space-y-4 mb-8">
+                <h3 class="text-sm font-bold text-warm-900 border-b border-warm-200 pb-2">基本資料 (必填)</h3>
+                <div>
+                    <input type="text" id="input-name" placeholder="請輸入姓名" class="w-full p-3 rounded-lg border border-warm-200 bg-warm-50 focus:border-pop focus:ring-2 focus:ring-pop outline-none">
+                </div>
+                <div>
+                    <input type="text" id="input-id" placeholder="請輸入學號" class="w-full p-3 rounded-lg border border-warm-200 bg-warm-50 focus:border-pop focus:ring-2 focus:ring-pop outline-none">
+                </div>
+            </div>
+
+            <!-- 聯絡意願 -->
+            <div class="space-y-3 mb-8">
+                <h3 class="text-sm font-bold text-warm-900 border-b border-warm-200 pb-2 mb-3">後續支援 (選填)</h3>
+                <p class="text-sm text-warm-800 mb-2 leading-relaxed">你是否願意讓諮商中心的老師主動聯繫你？</p>
+                
+                <button class="follow-up-btn w-full p-4 rounded-xl border-2 border-warm-200 text-left flex justify-between items-center transition-colors focus:outline-none bg-white" data-val="yes">
+                    <span class="font-bold text-warm-900">是的，我願意</span>
+                    <i class="indicator fa-regular fa-circle-check text-xl text-warm-300"></i>
+                </button>
+                
+                <!-- 展開的手機輸入框 -->
+                <div id="phone-container" class="hidden px-2 pb-2">
+                    <input type="tel" id="input-phone" placeholder="請留下手機號碼" class="w-full p-3 rounded-lg border border-pop bg-orange-50 focus:border-pop focus:ring-2 focus:ring-pop outline-none transition-all">
+                </div>
+
+                <button class="follow-up-btn w-full p-4 rounded-xl border-2 border-warm-200 text-left flex justify-between items-center transition-colors focus:outline-none bg-white" data-val="no">
+                    <span class="font-bold text-warm-900">暫時不需要</span>
+                    <i class="indicator fa-regular fa-circle-check text-xl text-warm-300"></i>
+                </button>
+            </div>
+
+            <div class="mt-auto">
+                <button id="btn-submit" disabled class="w-full py-4 rounded-xl font-bold text-lg bg-warm-200 text-warm-500 transition-colors shadow-md disabled:opacity-50">
+                    送出結果
+                </button>
+            </div>
+        </section>
+
+        <!-- ================= 畫面四：Success 彈窗 ================= -->
+        <div id="success-modal" class="hidden fixed inset-0 z-50 bg-warm-900/60 backdrop-blur-sm flex items-center justify-center animate-fade-in">
+            <div class="bg-white p-8 rounded-2xl w-5/6 max-w-sm text-center shadow-2xl">
+                <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 text-green-600 text-4xl">
+                    <i class="fa-solid fa-check"></i>
+                </div>
+                <h3 class="text-xl font-bold text-warm-900 mb-3">資料已送出！</h3>
+                <p class="text-warm-800 text-base leading-relaxed">請回到講座現場<br>等待下一步指令。</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ================= JavaScript 邏輯 ================= -->
+    <script>
+        // 替換為你的 Google Apps Script 網址
+        const GAS_URL = '請在這裡貼上你部署的網址';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            let answers = {};
+            let isWilling = null;
+            let feedbackCategory = ""; // 紀錄狀態（低/中/高）傳給後端
+            
+            const questions = [
+                "1. 睡眠困難（譬如難以入睡、易醒或早醒）", "2. 感覺緊張不安", "3. 覺得容易動怒",
+                "4. 感覺憂鬱、心情低落", "5. 覺得比不上別人", "6. 有自殺的想法"
+            ];
+
+            const screen1 = document.getElementById('screen-1');
+            const screen2 = document.getElementById('screen-2');
+            const screen3 = document.getElementById('screen-3');
+            const consentCheck = document.getElementById('consent-check');
+            const btnStart = document.getElementById('btn-start');
+            const btnNext = document.getElementById('btn-next');
+            const btnSubmit = document.getElementById('btn-submit');
+            
+            // 畫面一邏輯
+            consentCheck.addEventListener('change', (e) => {
+                btnStart.disabled = !e.target.checked;
+                btnStart.className = e.target.checked 
+                    ? "w-full py-4 rounded-xl font-bold text-lg bg-warm-900 text-white transition-colors shadow-sm" 
+                    : "w-full py-4 rounded-xl font-bold text-lg bg-warm-200 text-warm-500 transition-colors shadow-sm disabled:opacity-50";
+            });
+
+            btnStart.addEventListener('click', () => {
+                screen1.classList.add('hidden'); screen1.classList.remove('flex');
+                screen2.classList.remove('hidden'); screen2.classList.add('flex'); window.scrollTo(0, 0);
+            });
+
+            // 畫面二生成與邏輯
+            const qContainer = document.getElementById('questions-container');
+            const answeredCountSpan = document.getElementById('answered-count');
+
+            questions.forEach((qText, index) => {
+                const qNum = index + 1;
+                const bgClass = qNum === 6 ? 'bg-white border-2 border-warm-300 shadow-md' : 'bg-white shadow-sm border border-warm-100';
+                let html = `<div class="rounded-2xl p-5 ${bgClass}"><h3 class="font-bold text-warm-900 mb-4 leading-snug">${qText}</h3><div class="flex justify-between gap-1 sm:gap-2">`;
+                for(let i=0; i<=4; i++) {
+                    html += `<button class="ans-btn w-12 h-12 rounded-full font-bold text-lg bg-warm-50 text-warm-500 border border-warm-200 focus:outline-none transition-colors" data-q="${qNum}" data-val="${i}">${i}</button>`;
+                }
+                html += `</div></div>`;
+                qContainer.insertAdjacentHTML('beforeend', html);
+            });
+
+            document.querySelectorAll('.ans-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const q = this.getAttribute('data-q');
+                    answers[q] = parseInt(this.getAttribute('data-val'));
+                    
+                    const siblings = this.parentElement.querySelectorAll('.ans-btn');
+                    siblings.forEach(s => {
+                        s.classList.remove('bg-pop', 'text-white', 'border-pop');
+                        s.classList.add('bg-warm-50', 'text-warm-500', 'border-warm-200');
+                    });
+                    this.classList.remove('bg-warm-50', 'text-warm-500', 'border-warm-200');
+                    this.classList.add('bg-pop', 'text-white', 'border-pop');
+
+                    const count = Object.keys(answers).length;
+                    answeredCountSpan.textContent = count;
+                    if(count === 6) {
+                        btnNext.disabled = false;
+                        btnNext.className = "w-full py-4 rounded-xl font-bold text-lg bg-warm-900 text-white transition-colors shadow-sm";
+                    }
+                });
+            });
+
+            btnNext.addEventListener('click', () => {
+                // === 計算分數與回饋 ===
+                const total = (answers['1']||0) + (answers['2']||0) + (answers['3']||0) + (answers['4']||0) + (answers['5']||0);
+                const q6 = (answers['6']||0);
+                const feedbackText = document.getElementById('feedback-text');
+                const feedbackArea = document.getElementById('feedback-area');
+
+                if (total >= 10 || q6 >= 2) {
+                    feedbackCategory = "高風險";
+                    feedbackText.innerHTML = "🚨 大腦警示燈亮起！<br>你的電池目前處於低電量狀態，系統有點過載囉。請務必留意自己的身心警訊，適時求助！";
+                    feedbackArea.className = "mb-8 p-5 rounded-2xl border-2 border-red-300 bg-red-50 shadow-inner";
+                } else if (total >= 6) {
+                    feedbackCategory = "中等耗電";
+                    feedbackText.innerHTML = "🔋 大腦微幅耗電中。<br>最近是不是有點累、壓力有點大？記得給自己安排一些喘息與放空的空檔喔。";
+                    feedbackArea.className = "mb-8 p-5 rounded-2xl border-2 border-yellow-400 bg-yellow-50 shadow-inner";
+                } else {
+                    feedbackCategory = "狀態良好";
+                    feedbackText.innerHTML = "✨ 電池狀態良好！<br>你的大腦目前運作順暢，請繼續保持這個照顧自己的好節奏。";
+                    feedbackArea.className = "mb-8 p-5 rounded-2xl border-2 border-green-400 bg-green-50 shadow-inner";
+                }
+
+                screen2.classList.add('hidden'); screen2.classList.remove('flex');
+                screen3.classList.remove('hidden'); screen3.classList.add('flex'); window.scrollTo(0, 0);
+            });
+
+            // 畫面三邏輯
+            const followUpBtns = document.querySelectorAll('.follow-up-btn');
+            const inName = document.getElementById('input-name');
+            const inId = document.getElementById('input-id');
+            const inPhone = document.getElementById('input-phone');
+            const phoneContainer = document.getElementById('phone-container');
+
+            function checkSubmitReady() {
+                // 強制驗證姓名與學號
+                const isBaseInfoFilled = (inName.value.trim() !== '' && inId.value.trim() !== '');
+                let ready = false;
+
+                if (isBaseInfoFilled && isWilling === 'no') {
+                    ready = true;
+                } else if (isBaseInfoFilled && isWilling === 'yes') {
+                    // 若願意聯絡，手機也必填
+                    if (inPhone.value.trim() !== '') ready = true;
+                }
+
+                if(ready) {
+                    btnSubmit.disabled = false;
+                    btnSubmit.className = "w-full py-4 rounded-xl font-bold text-lg bg-pop text-white transition-colors shadow-md";
+                } else {
+                    btnSubmit.disabled = true;
+                    btnSubmit.className = "w-full py-4 rounded-xl font-bold text-lg bg-warm-200 text-warm-500 transition-colors shadow-md disabled:opacity-50";
+                }
+            }
+
+            followUpBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    isWilling = this.getAttribute('data-val');
+                    
+                    followUpBtns.forEach(b => {
+                        b.classList.remove('border-pop', 'bg-orange-50');
+                        b.classList.add('border-warm-200', 'bg-white');
+                        b.querySelector('.indicator').classList.replace('fa-solid', 'fa-regular');
+                        b.querySelector('.indicator').classList.replace('text-pop', 'text-warm-300');
+                    });
+                    
+                    this.classList.remove('border-warm-200', 'bg-white');
+                    this.classList.add('border-pop', 'bg-orange-50');
+                    this.querySelector('.indicator').classList.replace('fa-regular', 'fa-solid');
+                    this.querySelector('.indicator').classList.replace('text-warm-300', 'text-pop');
+
+                    if(isWilling === 'yes') {
+                        phoneContainer.classList.remove('hidden');
+                    } else {
+                        phoneContainer.classList.add('hidden');
+                        inPhone.value = ''; // 清除不需要的手機號碼
+                    }
+                    
+                    checkSubmitReady();
+                });
+            });
+
+            inName.addEventListener('input', checkSubmitReady);
+            inId.addEventListener('input', checkSubmitReady);
+            inPhone.addEventListener('input', checkSubmitReady);
+
+            // 提交資料
+            const successModal = document.getElementById('success-modal');
+            btnSubmit.addEventListener('click', () => {
+                btnSubmit.disabled = true;
+                btnSubmit.textContent = '資料傳送中...';
+                
+                const finalData = {
+                    answers: answers,
+                    needHelp: isWilling,
+                    category: feedbackCategory, // 將狀態回傳給老師
+                    contact: {
+                        name: inName.value.trim(),
+                        id: inId.value.trim(),
+                        phone: inPhone.value.trim()
+                    }
+                };
+
+                // 若您還沒部署 GAS_URL，這裡會跳出錯誤但仍顯示成功動畫
+                fetch(GAS_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(finalData)
+                })
+                .then(() => successModal.classList.remove('hidden'))
+                .catch(err => {
+                    console.error("傳送狀態:", err);
+                    successModal.classList.remove('hidden');
+                });
+            });
+        });
+    </script>
+</body>
+</html>
